@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA Horizons API 範例</title>
+</head>
+<body>
+
+    <h1>查詢月亮黃經</h1>
+    <p>以下資料是從 NASA JPL Horizons 系統獲取的。</p>
+    <p>查詢日期：2025-08-25 UTC</p>
+
+    <div id="result">
+        <p>正在查詢中，請稍候...</p>
+    </div>
+
+    <script>
+        // 設定 API 請求的 URL
+        const url = `https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND='301'&OBJ_DATA='NO'&MAKE_EPHEM='YES'&EPHEM_TYPE='OBSERVER'&CENTER='@399'&START_TIME='2025-08-25'&STOP_TIME='2025-08-25'&STEP_SIZE='1d'&QUANTITIES='20'`;
+
+        // 使用 fetch API 獲取資料
+        fetch(url)
+            .then(response => {
+                // 檢查請求是否成功
+                if (!response.ok) {
+                    throw new Error('無法連接到 Horizons API');
+                }
+                return response.text();
+            })
+            .then(data => {
+                // 解析回傳的文字資料
+                const lines = data.split('\n');
+                let eclipticLongitude = '資料未找到';
+
+                // 尋找包含黃經的行，通常以 "$$SOE" 和 "$$EOE" 標記資料的開始和結束
+                const soeIndex = lines.findIndex(line => line.includes('$$SOE'));
+                const eoeIndex = lines.findIndex(line => line.includes('$$EOE'));
+
+                if (soeIndex !== -1 && eoeIndex !== -1) {
+                    const dataLine = lines[soeIndex + 1];
+                    // 從資料行中提取黃經數值
+                    // 範例資料格式： 2452445.500000000 = 2025-Aug-25 00:00:00.0000 * 242.02980
+                    const parts = dataLine.trim().split(/\s+/);
+                    eclipticLongitude = parts[parts.length - 1].replace('*', '');
+                }
+
+                // 顯示結果
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `<p>月亮的黃經：<strong style="font-size: 20px;">${eclipticLongitude}°</strong></p>`;
+
+            })
+            .catch(error => {
+                // 處理錯誤
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `<p style="color:red;">發生錯誤：${error.message}</p>`;
+                console.error('查詢失敗:', error);
+            });
+    </script>
+
+</body>
+</html>
